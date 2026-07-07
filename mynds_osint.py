@@ -55,6 +55,22 @@ HEADERS_API = {
 # (guards against thin/generic 200 pages).
 MIN_VALID_BODY_LEN = 200
 
+# Display order for result categories. Each PLATFORMS entry carries a "category"
+# field; results are grouped and printed following this order.
+CATEGORY_ORDER = [
+    "Social Networks",
+    "Development / Tech",
+    "Gaming",
+    "Music / Creators",
+    "Photos / Design",
+    "Communities",
+    "Cybersecurity",
+    "Crypto / Finance",
+    "Work",
+    "Streaming / Video",
+    "Others",
+]
+
 # ══════════════════════════════════════════════════════════════════════════════
 # PLATFORM DATABASE — 60+ sites with advanced detection
 # detect modes:
@@ -78,6 +94,7 @@ PLATFORMS = [
         # "username" field. IG's HTML shell returned a generic 200 and produced
         # false positives, which is why the fallback was removed.
         "name": "Instagram",
+        "category": "Social Networks",
         "url": "https://i.instagram.com/api/v1/users/web_profile_info/?username={}",
         "detect": "contains:\"username\"",
         "headers": {**HEADERS_API, "X-IG-App-ID": "936619743392459"},
@@ -85,24 +102,28 @@ PLATFORMS = [
     },
     {
         "name": "Twitter/X",
+        "category": "Social Networks",
         "url": "https://x.com/{}",
         "detect": "not_contains:This account doesn't exist",
         "headers": HEADERS_DEFAULT,
     },
     {
         "name": "YouTube",
+        "category": "Music / Creators",
         "url": "https://www.youtube.com/@{}",
         "detect": "not_contains:channel/about",
         "headers": HEADERS_DEFAULT,
     },
     {
         "name": "Facebook",
+        "category": "Social Networks",
         "url": "https://www.facebook.com/{}",
         "detect": "not_contains:Page Not Found",
         "headers": HEADERS_DEFAULT,
     },
     {
         "name": "LinkedIn",
+        "category": "Social Networks",
         "url": "https://www.linkedin.com/in/{}",
         "detect": "not_contains:Page not found",
         "headers": HEADERS_DEFAULT,
@@ -111,24 +132,28 @@ PLATFORMS = [
         # The real profile carries an og:title meta tag; the "not found" page
         # does not.
         "name": "Pinterest",
+        "category": "Social Networks",
         "url": "https://www.pinterest.com/{}/",
         "detect": "contains:og:title",
         "headers": HEADERS_DEFAULT,
     },
     {
         "name": "Snapchat",
+        "category": "Social Networks",
         "url": "https://www.snapchat.com/add/{}",
         "detect": "not_contains:Sorry, we couldn't find",
         "headers": HEADERS_DEFAULT,
     },
     {
         "name": "Tumblr",
+        "category": "Social Networks",
         "url": "https://{}.tumblr.com",
         "detect": "not_contains:There's nothing here",
         "headers": HEADERS_DEFAULT,
     },
     {
         "name": "Reddit",
+        "category": "Social Networks",
         "url": "https://www.reddit.com/user/{}/about.json",
         "detect": "contains:\"name\"",
         "headers": {**HEADERS_DEFAULT, "Accept": "application/json"},
@@ -136,12 +161,14 @@ PLATFORMS = [
     },
     {
         "name": "VK",
+        "category": "Social Networks",
         "url": "https://vk.com/{}",
         "detect": "not_contains:This page does not exist",
         "headers": HEADERS_DEFAULT,
     },
     {
         "name": "Mastodon",
+        "category": "Social Networks",
         "url": "https://mastodon.social/@{}",
         "detect": "not_contains:The page you are looking for",
         "headers": HEADERS_DEFAULT,
@@ -149,6 +176,7 @@ PLATFORMS = [
     {
         # Public API: 200 with "did" if the account exists, 400 otherwise.
         "name": "Bluesky",
+        "category": "Social Networks",
         "url": "https://public.api.bsky.app/xrpc/app.bsky.actor.getProfile?actor={}",
         "detect": "contains:\"did\"",
         "headers": {**HEADERS_DEFAULT, "Accept": "application/json"},
@@ -158,6 +186,7 @@ PLATFORMS = [
     # ── Development / Tech ─────────────────────────────────────────────────────
     {
         "name": "GitHub",
+        "category": "Development / Tech",
         "url": "https://api.github.com/users/{}",
         "detect": "contains:\"login\"",
         "headers": {**HEADERS_DEFAULT, "Accept": "application/vnd.github.v3+json"},
@@ -165,18 +194,21 @@ PLATFORMS = [
     },
     {
         "name": "GitLab",
+        "category": "Development / Tech",
         "url": "https://gitlab.com/{}",
         "detect": "not_contains:404",
         "headers": HEADERS_DEFAULT,
     },
     {
         "name": "Bitbucket",
+        "category": "Development / Tech",
         "url": "https://bitbucket.org/{}",
         "detect": "not_contains:Page not found",
         "headers": HEADERS_DEFAULT,
     },
     {
         "name": "HackerNews",
+        "category": "Development / Tech",
         "url": "https://hacker-news.firebaseio.com/v0/user/{}.json",
         "detect": "contains:\"id\"",
         "headers": HEADERS_DEFAULT,
@@ -184,6 +216,7 @@ PLATFORMS = [
     },
     {
         "name": "Dev.to",
+        "category": "Development / Tech",
         "url": "https://dev.to/api/users/by_username?url={}",
         "detect": "contains:\"username\"",
         "headers": {**HEADERS_DEFAULT, "Accept": "application/json"},
@@ -192,6 +225,7 @@ PLATFORMS = [
     {
         # A non-existent profile redirects to /login.
         "name": "Replit",
+        "category": "Development / Tech",
         "url": "https://replit.com/@{}",
         "detect": "not_contains:page doesn't exist",
         "headers": HEADERS_DEFAULT,
@@ -199,18 +233,21 @@ PLATFORMS = [
     },
     {
         "name": "Codepen",
+        "category": "Development / Tech",
         "url": "https://codepen.io/{}",
         "detect": "not_contains:404",
         "headers": HEADERS_DEFAULT,
     },
     {
         "name": "Pastebin",
+        "category": "Development / Tech",
         "url": "https://pastebin.com/u/{}",
         "detect": "not_contains:Not Found",
         "headers": HEADERS_DEFAULT,
     },
     {
         "name": "NPM",
+        "category": "Development / Tech",
         "url": "https://registry.npmjs.org/~{}",
         "detect": "status_200",
         "headers": HEADERS_DEFAULT,
@@ -218,6 +255,7 @@ PLATFORMS = [
     },
     {
         "name": "Dockerhub",
+        "category": "Development / Tech",
         "url": "https://hub.docker.com/v2/users/{}",
         "detect": "contains:\"username\"",
         "headers": {**HEADERS_DEFAULT, "Accept": "application/json"},
@@ -226,6 +264,7 @@ PLATFORMS = [
     {
         # The API always returns the "items" key; only counts if it is NOT empty.
         "name": "StackOverflow",
+        "category": "Development / Tech",
         "url": "https://api.stackexchange.com/2.3/users?inname={}&site=stackoverflow",
         "detect": "not_contains:\"items\":[]",
         "headers": HEADERS_DEFAULT,
@@ -237,18 +276,21 @@ PLATFORMS = [
         # The real profile contains the "profile_page" container; the error page
         # carries "error_ctn". We use the positive marker.
         "name": "Steam",
+        "category": "Gaming",
         "url": "https://steamcommunity.com/id/{}",
         "detect": "contains:profile_page",
         "headers": HEADERS_DEFAULT,
     },
     {
         "name": "PSN",
+        "category": "Gaming",
         "url": "https://psnprofiles.com/{}",
         "detect": "not_contains:User Not Found",
         "headers": HEADERS_DEFAULT,
     },
     {
         "name": "Roblox",
+        "category": "Gaming",
         "url": "https://api.roblox.com/users/get-by-username?username={}",
         "detect": "contains:\"Id\"",
         "headers": HEADERS_DEFAULT,
@@ -256,6 +298,7 @@ PLATFORMS = [
     },
     {
         "name": "Chess.com",
+        "category": "Gaming",
         "url": "https://api.chess.com/pub/player/{}",
         "detect": "contains:\"username\"",
         "headers": HEADERS_DEFAULT,
@@ -263,6 +306,7 @@ PLATFORMS = [
     },
     {
         "name": "Minecraft",
+        "category": "Gaming",
         "url": "https://api.mojang.com/users/profiles/minecraft/{}",
         "detect": "contains:\"name\"",
         "headers": HEADERS_DEFAULT,
@@ -270,6 +314,7 @@ PLATFORMS = [
     },
     {
         "name": "Speedrun",
+        "category": "Gaming",
         "url": "https://www.speedrun.com/api/v1/users/{}",
         "detect": "contains:\"data\"",
         "headers": HEADERS_DEFAULT,
@@ -277,6 +322,7 @@ PLATFORMS = [
     },
     {
         "name": "Fortnite",
+        "category": "Gaming",
         "url": "https://fortnitetracker.com/profile/all/{}",
         "detect": "not_contains:We could not find",
         "headers": HEADERS_DEFAULT,
@@ -285,6 +331,7 @@ PLATFORMS = [
     # ── Music / Creators ──────────────────────────────────────────────────────
     {
         "name": "SoundCloud",
+        "category": "Music / Creators",
         "url": "https://soundcloud.com/{}",
         "detect": "not_contains:We can't find that user",
         "headers": HEADERS_DEFAULT,
@@ -292,6 +339,7 @@ PLATFORMS = [
     {
         # A non-existent subdomain redirects to bandcamp.com/signup.
         "name": "Bandcamp",
+        "category": "Music / Creators",
         "url": "https://{}.bandcamp.com",
         "detect": "status_200",
         "headers": HEADERS_DEFAULT,
@@ -299,12 +347,14 @@ PLATFORMS = [
     },
     {
         "name": "Last.fm",
+        "category": "Music / Creators",
         "url": "https://www.last.fm/user/{}",
         "detect": "not_contains:User not found",
         "headers": HEADERS_DEFAULT,
     },
     {
         "name": "Mixcloud",
+        "category": "Music / Creators",
         "url": "https://api.mixcloud.com/{}/",
         "detect": "contains:\"username\"",
         "headers": HEADERS_DEFAULT,
@@ -314,30 +364,35 @@ PLATFORMS = [
     # ── Photos / Design ───────────────────────────────────────────────────────
     {
         "name": "Flickr",
+        "category": "Photos / Design",
         "url": "https://www.flickr.com/people/{}",
         "detect": "not_contains:Page Not Found",
         "headers": HEADERS_DEFAULT,
     },
     {
         "name": "Behance",
+        "category": "Photos / Design",
         "url": "https://www.behance.net/{}",
         "detect": "not_contains:page not found",
         "headers": HEADERS_DEFAULT,
     },
     {
         "name": "Dribbble",
+        "category": "Photos / Design",
         "url": "https://dribbble.com/{}",
         "detect": "not_contains:Whoops",
         "headers": HEADERS_DEFAULT,
     },
     {
         "name": "DeviantArt",
+        "category": "Photos / Design",
         "url": "https://www.deviantart.com/{}",
         "detect": "not_contains:page not found",
         "headers": HEADERS_DEFAULT,
     },
     {
         "name": "ArtStation",
+        "category": "Photos / Design",
         "url": "https://www.artstation.com/{}",
         "detect": "not_contains:Page not found",
         "headers": HEADERS_DEFAULT,
@@ -346,12 +401,14 @@ PLATFORMS = [
     # ── Forums / Communities ──────────────────────────────────────────────────
     {
         "name": "Quora",
+        "category": "Communities",
         "url": "https://www.quora.com/profile/{}",
         "detect": "not_contains:Page Not Found",
         "headers": HEADERS_DEFAULT,
     },
     {
         "name": "Medium",
+        "category": "Communities",
         "url": "https://medium.com/@{}",
         "detect": "not_contains:Page not found",
         "headers": HEADERS_DEFAULT,
@@ -359,6 +416,7 @@ PLATFORMS = [
     {
         # A non-existent handle redirects to /search.
         "name": "Substack",
+        "category": "Communities",
         "url": "https://substack.com/@{}",
         "detect": "status_200",
         "headers": HEADERS_DEFAULT,
@@ -368,6 +426,7 @@ PLATFORMS = [
     {
         # A non-existent subdomain redirects to wordpress.com/typo.
         "name": "Wordpress",
+        "category": "Communities",
         "url": "https://{}.wordpress.com",
         "detect": "status_200",
         "headers": HEADERS_DEFAULT,
@@ -375,12 +434,14 @@ PLATFORMS = [
     },
     {
         "name": "Goodreads",
+        "category": "Communities",
         "url": "https://www.goodreads.com/{}",
         "detect": "not_contains:Page not found",
         "headers": HEADERS_DEFAULT,
     },
     {
         "name": "Letterboxd",
+        "category": "Communities",
         "url": "https://letterboxd.com/{}",
         "detect": "not_contains:Sorry, we can't find",
         "headers": HEADERS_DEFAULT,
@@ -389,12 +450,14 @@ PLATFORMS = [
     # ── Cybersecurity ─────────────────────────────────────────────────────────
     {
         "name": "HackTheBox",
+        "category": "Cybersecurity",
         "url": "https://www.hackthebox.com/api/v4/user/profile/basic/{}",
         "detect": "contains:\"profile\"",
         "headers": HEADERS_DEFAULT,
     },
     {
         "name": "TryHackMe",
+        "category": "Cybersecurity",
         "url": "https://tryhackme.com/api/user/exist/{}",
         "detect": "contains:true",
         "headers": HEADERS_DEFAULT,
@@ -402,12 +465,14 @@ PLATFORMS = [
     },
     {
         "name": "BugCrowd",
+        "category": "Cybersecurity",
         "url": "https://bugcrowd.com/{}",
         "detect": "not_contains:The page you were looking for",
         "headers": HEADERS_DEFAULT,
     },
     {
         "name": "HackerOne",
+        "category": "Cybersecurity",
         "url": "https://hackerone.com/{}",
         "detect": "not_contains:Page not found",
         "headers": HEADERS_DEFAULT,
@@ -416,6 +481,7 @@ PLATFORMS = [
     # ── Crypto / Finance ──────────────────────────────────────────────────────
     {
         "name": "Keybase",
+        "category": "Crypto / Finance",
         "url": "https://keybase.io/_/api/1.0/user/lookup.json?username={}",
         "detect": "contains:\"them\"",
         "headers": HEADERS_DEFAULT,
@@ -425,12 +491,14 @@ PLATFORMS = [
     # ── Work / Professional ───────────────────────────────────────────────────
     {
         "name": "ProductHunt",
+        "category": "Work",
         "url": "https://www.producthunt.com/@{}",
         "detect": "not_contains:Page not found",
         "headers": HEADERS_DEFAULT,
     },
     {
         "name": "Fiverr",
+        "category": "Work",
         "url": "https://www.fiverr.com/{}",
         "detect": "not_contains:Page Not Found",
         "headers": HEADERS_DEFAULT,
@@ -439,18 +507,21 @@ PLATFORMS = [
     # ── Streaming / Video ─────────────────────────────────────────────────────
     {
         "name": "Vimeo",
+        "category": "Streaming / Video",
         "url": "https://vimeo.com/{}",
         "detect": "not_contains:Sorry, we couldn't find",
         "headers": HEADERS_DEFAULT,
     },
     {
         "name": "Rumble",
+        "category": "Streaming / Video",
         "url": "https://rumble.com/user/{}",
         "detect": "not_contains:Page Not Found",
         "headers": HEADERS_DEFAULT,
     },
     {
         "name": "Kick",
+        "category": "Streaming / Video",
         "url": "https://kick.com/{}",
         "detect": "not_contains:404",
         "headers": HEADERS_DEFAULT,
@@ -460,30 +531,35 @@ PLATFORMS = [
     {
         # A real profile/channel carries "tgme_page_title"; the empty page does not.
         "name": "Telegram",
+        "category": "Others",
         "url": "https://t.me/{}",
         "detect": "contains:tgme_page_title",
         "headers": HEADERS_DEFAULT,
     },
     {
         "name": "Gravatar",
+        "category": "Others",
         "url": "https://en.gravatar.com/{}",
         "detect": "not_contains:404",
         "headers": HEADERS_DEFAULT,
     },
     {
         "name": "About.me",
+        "category": "Others",
         "url": "https://about.me/{}",
         "detect": "not_contains:page doesn't exist",
         "headers": HEADERS_DEFAULT,
     },
     {
         "name": "Linktree",
+        "category": "Others",
         "url": "https://linktr.ee/{}",
         "detect": "not_contains:Sorry",
         "headers": HEADERS_DEFAULT,
     },
     {
         "name": "Patreon",
+        "category": "Others",
         "url": "https://www.patreon.com/{}",
         "detect": "not_contains:page you're looking for",
         "headers": HEADERS_DEFAULT,
@@ -491,6 +567,7 @@ PLATFORMS = [
     {
         # A non-existent user redirects to the homepage (username drops from the path).
         "name": "Ko-fi",
+        "category": "Others",
         "url": "https://ko-fi.com/{}",
         "detect": "status_200",
         "headers": HEADERS_DEFAULT,
@@ -498,12 +575,14 @@ PLATFORMS = [
     },
     {
         "name": "Strava",
+        "category": "Others",
         "url": "https://www.strava.com/athletes/{}",
         "detect": "not_contains:Page Not Found",
         "headers": HEADERS_DEFAULT,
     },
     {
         "name": "Cashapp",
+        "category": "Crypto / Finance",
         "url": "https://cash.app/${}",
         "detect": "not_contains:Page Not Found",
         "headers": HEADERS_DEFAULT,
@@ -643,14 +722,14 @@ def check_platform(platform, username):
         # status_200 — simple
         if detect == "status_200":
             if r.status_code == 200:
-                return {"name": platform["name"], "url": platform.get("display_url", url).format(username), "status": r.status_code}
+                return {"name": platform["name"], "category": platform.get("category", "Others"), "url": platform.get("display_url", url).format(username), "status": r.status_code}
             return None
 
         # contains:TEXT — the profile exists if the text is present
         if detect.startswith("contains:"):
             needle = detect.removeprefix("contains:").lower()
             if r.status_code == 200 and needle in body:
-                return {"name": platform["name"], "url": platform.get("display_url", url).format(username), "status": r.status_code}
+                return {"name": platform["name"], "category": platform.get("category", "Others"), "url": platform.get("display_url", url).format(username), "status": r.status_code}
             return None
 
         # not_contains:TEXT — the profile exists if the text is NOT present
@@ -658,7 +737,7 @@ def check_platform(platform, username):
             needle = detect.removeprefix("not_contains:").lower()
             # Also guard against a generic empty page being counted as found.
             if r.status_code == 200 and needle not in body and len(r.text) > MIN_VALID_BODY_LEN:
-                return {"name": platform["name"], "url": platform.get("display_url", url).format(username), "status": r.status_code}
+                return {"name": platform["name"], "category": platform.get("category", "Others"), "url": platform.get("display_url", url).format(username), "status": r.status_code}
             return None
 
         return None
@@ -713,34 +792,18 @@ def show_results(username, found):
     ok(f"Found on {G}{B}{len(found)}{RS} {W}platforms:")
     print()
 
-    # Group by category
-    categories = {
-        "Social Networks":     ["Instagram","Twitter/X","Facebook","LinkedIn","Pinterest","Snapchat","Tumblr","Reddit","Bluesky","VK","Mastodon"],
-        "Development / Tech":   ["GitHub","GitLab","Bitbucket","HackerNews","StackOverflow","Dev.to","Replit","Codepen","Pastebin","NPM","Dockerhub"],
-        "Gaming":              ["Steam","PSN","Roblox","Chess.com","Minecraft","Fortnite","Speedrun"],
-        "Music / Creators":    ["SoundCloud","Bandcamp","Last.fm","Mixcloud","YouTube","Kick","Vimeo","Rumble","Patreon","Ko-fi"],
-        "Photos / Design":     ["Flickr","Behance","Dribbble","DeviantArt","ArtStation"],
-        "Cybersecurity":       ["HackTheBox","TryHackMe","BugCrowd","HackerOne"],
-        "Crypto / Finance":    ["Keybase","Cashapp"],
-        "Work":                ["ProductHunt","Fiverr"],
-        "Communities":         ["Quora","Medium","Substack","Wordpress","Goodreads","Letterboxd","Strava"],
-        "Others":              ["Telegram","Gravatar","About.me","Linktree"],
-    }
-
-    found_names = {f["name"]: f for f in found}
-    printed = set()
-
-    for cat, plats in categories.items():
-        cat_found = [found_names[p] for p in plats if p in found_names]
+    # Group by the category carried on each result (defined in PLATFORMS).
+    # Print in this fixed order; unknown categories fall through to "Others".
+    for cat in CATEGORY_ORDER:
+        cat_found = [f for f in found if f.get("category") == cat]
         if cat_found:
             print(f"  {C}{B}▸ {cat}{RS}")
             for f in cat_found:
                 print(f"    {G}[✓]{RS} {W}{B}{f['name']:<18}{RS} {D}{f['url']}{RS}")
-                printed.add(f["name"])
             print()
 
-    # Any result that did not fall into a category
-    extras = [f for f in found if f["name"] not in printed]
+    # Any result whose category is not part of CATEGORY_ORDER
+    extras = [f for f in found if f.get("category") not in CATEGORY_ORDER]
     if extras:
         print(f"  {C}{B}▸ Others{RS}")
         for f in extras:
