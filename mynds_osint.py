@@ -130,6 +130,7 @@ PLATFORMS = [
         "url": "https://www.reddit.com/user/{}/about.json",
         "detect": "contains:\"name\"",
         "headers": {**HEADERS_DEFAULT, "Accept": "application/json"},
+        "display_url": "https://www.reddit.com/user/{}",
     },
     {
         "name": "VK",
@@ -177,6 +178,7 @@ PLATFORMS = [
         "url": "https://hacker-news.firebaseio.com/v0/user/{}.json",
         "detect": "contains:\"id\"",
         "headers": HEADERS_DEFAULT,
+        "display_url": "https://news.ycombinator.com/user?id={}",
     },
     {
         "name": "Dev.to",
@@ -210,12 +212,14 @@ PLATFORMS = [
         "url": "https://registry.npmjs.org/~{}",
         "detect": "status_200",
         "headers": HEADERS_DEFAULT,
+        "display_url": "https://www.npmjs.com/~{}",
     },
     {
         "name": "Dockerhub",
         "url": "https://hub.docker.com/v2/users/{}",
         "detect": "contains:\"username\"",
         "headers": {**HEADERS_DEFAULT, "Accept": "application/json"},
+        "display_url": "https://hub.docker.com/u/{}",
     },
     {
         # The API always returns the "items" key; only counts if it is NOT empty.
@@ -246,6 +250,7 @@ PLATFORMS = [
         "url": "https://api.roblox.com/users/get-by-username?username={}",
         "detect": "contains:\"Id\"",
         "headers": HEADERS_DEFAULT,
+        "display_url": "https://www.roblox.com/search/users?keyword={}",
     },
     {
         "name": "Chess.com",
@@ -259,12 +264,14 @@ PLATFORMS = [
         "url": "https://api.mojang.com/users/profiles/minecraft/{}",
         "detect": "contains:\"name\"",
         "headers": HEADERS_DEFAULT,
+        "display_url": "https://namemc.com/profile/{}",
     },
     {
         "name": "Speedrun",
         "url": "https://www.speedrun.com/api/v1/users/{}",
         "detect": "contains:\"data\"",
         "headers": HEADERS_DEFAULT,
+        "display_url": "https://www.speedrun.com/user/{}",
     },
     {
         "name": "Fortnite",
@@ -299,6 +306,7 @@ PLATFORMS = [
         "url": "https://api.mixcloud.com/{}/",
         "detect": "contains:\"username\"",
         "headers": HEADERS_DEFAULT,
+        "display_url": "https://www.mixcloud.com/{}/",
     },
 
     # ── Photos / Design ───────────────────────────────────────────────────────
@@ -388,6 +396,7 @@ PLATFORMS = [
         "url": "https://tryhackme.com/api/user/exist/{}",
         "detect": "contains:true",
         "headers": HEADERS_DEFAULT,
+        "display_url": "https://tryhackme.com/p/{}",
     },
     {
         "name": "BugCrowd",
