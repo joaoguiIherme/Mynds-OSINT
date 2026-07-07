@@ -158,6 +158,7 @@ PLATFORMS = [
         "url": "https://api.github.com/users/{}",
         "detect": "contains:\"login\"",
         "headers": {**HEADERS_DEFAULT, "Accept": "application/vnd.github.v3+json"},
+        "display_url": "https://github.com/{}",
     },
     {
         "name": "GitLab",
@@ -251,6 +252,7 @@ PLATFORMS = [
         "url": "https://api.chess.com/pub/player/{}",
         "detect": "contains:\"username\"",
         "headers": HEADERS_DEFAULT,
+        "display_url": "https://www.chess.com/member/{}",
     },
     {
         "name": "Minecraft",
@@ -406,6 +408,7 @@ PLATFORMS = [
         "url": "https://keybase.io/_/api/1.0/user/lookup.json?username={}",
         "detect": "contains:\"them\"",
         "headers": HEADERS_DEFAULT,
+        "display_url": "https://keybase.io/{}",
     },
 
     # ── Work / Professional ───────────────────────────────────────────────────
