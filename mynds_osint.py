@@ -5,12 +5,15 @@
 #   For legal, ethical and educational use only
 # ═══════════════════════════════════════════════════════════════════════════════
 
+from __future__ import annotations
+
 import sys
 import time
 import os
 import re
 import urllib.parse
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import Optional, TypedDict
 
 try:
     import requests
@@ -32,7 +35,7 @@ D  = Fore.WHITE + Style.DIM
 B  = Style.BRIGHT
 RS = Style.RESET_ALL
 
-HEADERS_DEFAULT = {
+HEADERS_DEFAULT: dict[str, str] = {
     "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
                   "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
@@ -41,7 +44,7 @@ HEADERS_DEFAULT = {
     "Connection": "keep-alive",
 }
 
-HEADERS_API = {
+HEADERS_API: dict[str, str] = {
     "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) "
                   "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
     "Accept": "application/json, text/plain, */*",
@@ -53,11 +56,36 @@ HEADERS_API = {
 
 # Minimum response body length to treat a not_contains match as a real profile
 # (guards against thin/generic 200 pages).
-MIN_VALID_BODY_LEN = 200
+MIN_VALID_BODY_LEN: int = 200
+
+
+class Platform(TypedDict, total=False):
+    """A single platform definition in PLATFORMS.
+
+    Required in practice: name, category, url, detect, headers.
+    Optional: display_url, redirect_fail, verify_username_in_final.
+    """
+    name: str
+    category: str
+    url: str
+    detect: str
+    headers: dict[str, str]
+    display_url: str
+    redirect_fail: list[str]
+    verify_username_in_final: bool
+
+
+class Result(TypedDict):
+    """A positive hit returned by check_platform."""
+    name: str
+    category: str
+    url: str
+    status: int
+
 
 # Display order for result categories. Each PLATFORMS entry carries a "category"
 # field; results are grouped and printed following this order.
-CATEGORY_ORDER = [
+CATEGORY_ORDER: list[str] = [
     "Social Networks",
     "Development / Tech",
     "Gaming",
@@ -87,7 +115,7 @@ CATEGORY_ORDER = [
 #   verify_username_in_final   — the username must remain in the final URL path,
 #                                otherwise the site redirected to its homepage
 # ══════════════════════════════════════════════════════════════════════════════
-PLATFORMS = [
+PLATFORMS: list[Platform] = [
     # ── Social Networks ───────────────────────────────────────────────────────
     {
         # Strict JSON API: only counts as found when the JSON carries the
@@ -592,7 +620,7 @@ PLATFORMS = [
 # ══════════════════════════════════════════════════════════════════════════════
 # BANNER
 # ══════════════════════════════════════════════════════════════════════════════
-def banner():
+def banner() -> None:
     os.system("cls" if os.name == "nt" else "clear")
 
     CYAN = '\033[96m'
@@ -640,16 +668,16 @@ def banner():
 # ══════════════════════════════════════════════════════════════════════════════
 # HELPERS
 # ══════════════════════════════════════════════════════════════════════════════
-def separator(title=""):
+def separator(title: str = "") -> None:
     if title:
         pad = (58 - len(title)) // 2
         print(f"\n{C}{'─' * pad} {B}{title}{RS}{C} {'─' * pad}{RS}")
     else:
         print(f"{D}{'─' * 60}{RS}")
 
-REPORTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "reports")
+REPORTS_DIR: str = os.path.join(os.path.dirname(os.path.abspath(__file__)), "reports")
 
-def save_report(username, found, elapsed):
+def save_report(username: str, found: list[Result], elapsed: float) -> str:
     """Save the found accounts to reports/{username}.txt"""
     # Defense-in-depth: keep the report inside REPORTS_DIR even if this is ever
     # called outside main()'s validated flow. Reject anything that is not a bare
@@ -684,15 +712,15 @@ def save_report(username, found, elapsed):
 
     return path
 
-def ok(msg):   print(f"  {G}{B}[✓]{RS} {W}{msg}{RS}")
-def warn(msg): print(f"  {Y}[!]{RS} {Y}{msg}{RS}")
-def fail(msg): print(f"  {R}[✗]{RS} {D}{msg}{RS}")
-def info(msg): print(f"  {C}[i]{RS} {W}{msg}{RS}")
+def ok(msg: str) -> None:   print(f"  {G}{B}[✓]{RS} {W}{msg}{RS}")
+def warn(msg: str) -> None: print(f"  {Y}[!]{RS} {Y}{msg}{RS}")
+def fail(msg: str) -> None: print(f"  {R}[✗]{RS} {D}{msg}{RS}")
+def info(msg: str) -> None: print(f"  {C}[i]{RS} {W}{msg}{RS}")
 
 # ══════════════════════════════════════════════════════════════════════════════
 # CHECKER — verifies a single platform with advanced detection
 # ══════════════════════════════════════════════════════════════════════════════
-def check_platform(platform, username):
+def check_platform(platform: Platform, username: str) -> Optional[Result]:
     url     = platform["url"].format(username)
     detect  = platform.get("detect", "status_200")
     headers = platform.get("headers", HEADERS_DEFAULT)
@@ -752,17 +780,17 @@ def check_platform(platform, username):
 # ══════════════════════════════════════════════════════════════════════════════
 # MAIN SEARCH — multi-threaded
 # ══════════════════════════════════════════════════════════════════════════════
-def search_username(username):
+def search_username(username: str) -> list[Result]:
     separator(f"SEARCHING: {username}")
     print(f"\n  {C}Scanning {len(PLATFORMS)} platforms in parallel...{RS}")
     print(f"  {D}This may take 15-30 seconds{RS}\n")
 
-    found     = []
+    found: list[Result] = []
     total     = len(PLATFORMS)
     completed = 0
 
     # Simple progress bar
-    def progress(n, total):
+    def progress(n: int, total: int) -> None:
         pct  = int(n / total * 40)
         bar  = "█" * pct + "░" * (40 - pct)
         print(f"\r  {C}[{bar}]{RS} {W}{n}/{total}{RS}", end="", flush=True)
@@ -782,7 +810,7 @@ def search_username(username):
 # ══════════════════════════════════════════════════════════════════════════════
 # SHOW RESULTS
 # ══════════════════════════════════════════════════════════════════════════════
-def show_results(username, found):
+def show_results(username: str, found: list[Result]) -> None:
     separator(f"RESULTS — @{username}")
 
     if not found:
@@ -813,7 +841,7 @@ def show_results(username, found):
 # ══════════════════════════════════════════════════════════════════════════════
 # GOOGLE DORKS
 # ══════════════════════════════════════════════════════════════════════════════
-def google_dorks(username):
+def google_dorks(username: str) -> None:
     separator("GOOGLE DORKS")
     dorks = [
         (f'"{username}"',                              "Exact username"),
@@ -835,7 +863,7 @@ def google_dorks(username):
 # ══════════════════════════════════════════════════════════════════════════════
 # FINAL SUMMARY
 # ══════════════════════════════════════════════════════════════════════════════
-def final_summary(username, found, elapsed):
+def final_summary(username: str, found: list[Result], elapsed: float) -> None:
     separator("SUMMARY")
     print(f"\n  {C}{B}Target:{RS}     {W}{B}@{username}{RS}")
     print(f"  {C}{B}Platforms:{RS} {W}{len(PLATFORMS)} scanned{RS}")
@@ -851,7 +879,7 @@ def final_summary(username, found, elapsed):
 # ══════════════════════════════════════════════════════════════════════════════
 # MAIN
 # ══════════════════════════════════════════════════════════════════════════════
-def main():
+def main() -> None:
     banner()
 
     print(f"  {W}Enter the username to search (without @) or 'exit' to quit:{RS}\n")

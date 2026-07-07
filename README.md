@@ -2,7 +2,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/version-1.0-cyan?style=for-the-badge&logo=python&logoColor=white"/>
-  <img src="https://img.shields.io/badge/python-3.8+-blue?style=for-the-badge&logo=python&logoColor=white"/>
+  <img src="https://img.shields.io/badge/python-3.9+-blue?style=for-the-badge&logo=python&logoColor=white"/>
   <img src="https://img.shields.io/badge/OSINT-Username-orange?style=for-the-badge"/>
   <img src="https://img.shields.io/badge/license-MIT-green?style=for-the-badge"/>
   <img src="https://img.shields.io/badge/platforms-60+-brightgreen?style=for-the-badge"/>
@@ -68,7 +68,7 @@ pip install -r requirements.txt
 python3 mynds_osint.py
 ```
 
-Requires Python 3.8+. Dependencies: `requests`, `colorama`.
+Requires Python 3.9+. Dependencies: `requests`, `colorama`.
 
 ---
 
