@@ -29,7 +29,6 @@ G  = Fore.GREEN
 R  = Fore.RED
 W  = Fore.WHITE
 D  = Fore.WHITE + Style.DIM
-M  = Fore.MAGENTA
 B  = Style.BRIGHT
 RS = Style.RESET_ALL
 
@@ -51,6 +50,10 @@ HEADERS_API = {
     "Connection": "keep-alive",
     "X-Requested-With": "XMLHttpRequest",
 }
+
+# Minimum response body length to treat a not_contains match as a real profile
+# (guards against thin/generic 200 pages).
+MIN_VALID_BODY_LEN = 200
 
 # ══════════════════════════════════════════════════════════════════════════════
 # PLATFORM DATABASE — 60+ sites with advanced detection
@@ -91,7 +94,6 @@ PLATFORMS = [
         "url": "https://www.youtube.com/@{}",
         "detect": "not_contains:channel/about",
         "headers": HEADERS_DEFAULT,
-        "alt_detect": "contains:channelId",
     },
     {
         "name": "Facebook",
@@ -570,6 +572,11 @@ REPORTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "reports"
 
 def save_report(username, found, elapsed):
     """Save the found accounts to reports/{username}.txt"""
+    # Defense-in-depth: keep the report inside REPORTS_DIR even if this is ever
+    # called outside main()'s validated flow. Reject anything that is not a bare
+    # filename (no path separators, no '..').
+    if not username or os.path.basename(username) != username or username in (".", ".."):
+        raise ValueError(f"invalid username for report filename: {username!r}")
     os.makedirs(REPORTS_DIR, exist_ok=True)
     path = os.path.join(REPORTS_DIR, f"{username}.txt")
 
@@ -641,31 +648,17 @@ def check_platform(platform, username):
 
         # contains:TEXT — the profile exists if the text is present
         if detect.startswith("contains:"):
-            needle = detect.split("contains:")[1].lower()
+            needle = detect.removeprefix("contains:").lower()
             if r.status_code == 200 and needle in body:
                 return {"name": platform["name"], "url": platform.get("display_url", url).format(username), "status": r.status_code}
             return None
 
         # not_contains:TEXT — the profile exists if the text is NOT present
         if detect.startswith("not_contains:"):
-            needle = detect.split("not_contains:")[1].lower()
-            if r.status_code == 200 and needle not in body:
-                # Make sure it is not a generic empty page
-                if len(r.text) > 200:
-                    return {"name": platform["name"], "url": platform.get("display_url", url).format(username), "status": r.status_code}
-            # Try the fallback if one exists
-            if "fallback_url" in platform:
-                fb_url    = platform["fallback_url"].format(username)
-                fb_detect = platform.get("fallback_detect", "status_200")
-                try:
-                    r2   = requests.get(fb_url, headers=HEADERS_DEFAULT, timeout=8, allow_redirects=True)
-                    body2 = r2.text.lower()
-                    if fb_detect.startswith("not_contains:"):
-                        needle2 = fb_detect.split("not_contains:")[1].lower()
-                        if r2.status_code == 200 and needle2 not in body2 and len(r2.text) > 200:
-                            return {"name": platform["name"], "url": fb_url, "status": r2.status_code}
-                except Exception:
-                    pass
+            needle = detect.removeprefix("not_contains:").lower()
+            # Also guard against a generic empty page being counted as found.
+            if r.status_code == 200 and needle not in body and len(r.text) > MIN_VALID_BODY_LEN:
+                return {"name": platform["name"], "url": platform.get("display_url", url).format(username), "status": r.status_code}
             return None
 
         return None
@@ -704,7 +697,7 @@ def search_username(username):
             if result:
                 found.append(result)
 
-    print(f"\n")
+    print("\n")
     return found
 
 # ══════════════════════════════════════════════════════════════════════════════
