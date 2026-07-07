@@ -628,6 +628,8 @@ def banner() -> None:
     DIM  = '\033[2m\033[37m'
     BOLD = '\033[1m'
     YEL  = '\033[33m'
+    GRN  = '\033[92m'
+    GRY  = '\033[90m'
     RST  = '\033[0m'
 
     logo = [
@@ -642,19 +644,32 @@ def banner() -> None:
         "╚═╝    ╚═╝      ╚═════╝ ",
     ]
 
+    box_w = 48  # inner width of the framed box
+
+    def box(plain: str, colored: str) -> str:
+        # Pad using the *visible* text length so ANSI colors never break alignment.
+        pad = " " * max(0, box_w - 2 - len(plain))
+        return f"  {CYAN}│{RST}  {colored}{pad}{CYAN}│{RST}"
+
     print()
     for line in logo:
         mid = len(line) // 2
         print(f"       {CYAN}{BOLD}{line[:mid]}{ORAN}{line[mid:]}{RST}")
 
     print()
-    print(f"  {CYAN}{BOLD}Mynds{ORAN}-OSINT{RST} {CYAN}Suite{RST}  {DIM}───────────────────────────{RST}")
-    print(f"  {BOLD}╔══════════════════════════════════════════╗{RST}")
-    print(f"  {BOLD}║  👤  MYNDS-OSINT  v1.0                   ║{RST}")
-    print(f"  {BOLD}║  Username OSINT — 60+ platforms          ║{RST}")
-    print(f"  {BOLD}╚══════════════════════════════════════════╝{RST}")
-    print(f"  {DIM}[ github.com/joaoguiIherme/Mynds-OSINT ]{RST}")
-    print(f"  {YEL}⚠  For legal, ethical and educational use only  ⚠{RST}")
+    print(f"       {GRY}▪ {CYAN}{BOLD}OSINT RECONNAISSANCE FRAMEWORK{RST} {GRY}▪{RST}")
+    print()
+    print(f"  {CYAN}╭{'─' * box_w}╮{RST}")
+    print(box("MYNDS-OSINT  //  Username Intelligence",
+              f"{BOLD}MYNDS-OSINT{RST}  {GRY}//{RST}  {CYAN}Username Intelligence{RST}"))
+    print(box("v1.0   ·   63 modules   ·   multithreaded",
+              f"{DIM}v1.0{RST}   {GRY}·{RST}   {DIM}63 modules{RST}   {GRY}·{RST}   {DIM}multithreaded{RST}"))
+    print(f"  {CYAN}╰{'─' * box_w}╯{RST}")
+    print()
+    print(f"  {GRN}●{RST} {DIM}PASSIVE{RST}   {GRN}●{RST} {DIM}NO-AUTH{RST}   "
+          f"{GRN}●{RST} {DIM}NO API KEYS{RST}   {GRN}●{RST} {DIM}THREADED{RST}")
+    print(f"  {GRY}├─{RST} {DIM}repo  {RST}{CYAN}github.com/joaoguiIherme/Mynds-OSINT{RST}")
+    print(f"  {GRY}└─{RST} {YEL}⚠  authorized, legal & educational use only{RST}")
     print()
 
 # ══════════════════════════════════════════════════════════════════════════════
