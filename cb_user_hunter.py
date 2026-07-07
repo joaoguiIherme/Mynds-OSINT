@@ -64,23 +64,19 @@ HEADERS_API = {
 PLATFORMS = [
     # ── Redes Sociales ────────────────────────────────────────────────────────
     {
+        # API JSON estricta: solo cuenta como encontrado si el JSON trae el
+        # campo "username". El shell HTML de IG devolvía 200 genérico y daba
+        # falsos positivos, por eso se eliminó el fallback.
         "name": "Instagram",
-        "url": "https://www.instagram.com/{}/?__a=1&__d=dis",
-        "detect": "not_contains:\"user\":null",
+        "url": "https://i.instagram.com/api/v1/users/web_profile_info/?username={}",
+        "detect": "contains:\"username\"",
         "headers": {**HEADERS_API, "X-IG-App-ID": "936619743392459"},
-        "fallback_url": "https://www.instagram.com/{}/",
-        "fallback_detect": "not_contains:Page Not Found",
+        "display_url": "https://www.instagram.com/{}/",
     },
     {
         "name": "Twitter/X",
         "url": "https://x.com/{}",
         "detect": "not_contains:This account doesn't exist",
-        "headers": HEADERS_DEFAULT,
-    },
-    {
-        "name": "TikTok",
-        "url": "https://www.tiktok.com/@{}",
-        "detect": "not_contains:Couldn't find this account",
         "headers": HEADERS_DEFAULT,
     },
     {
@@ -103,9 +99,10 @@ PLATFORMS = [
         "headers": HEADERS_DEFAULT,
     },
     {
+        # El perfil real trae meta og:title; la página de "no encontrado" no.
         "name": "Pinterest",
         "url": "https://www.pinterest.com/{}/",
-        "detect": "not_contains:User not found",
+        "detect": "contains:og:title",
         "headers": HEADERS_DEFAULT,
     },
     {
@@ -127,12 +124,6 @@ PLATFORMS = [
         "headers": {**HEADERS_DEFAULT, "Accept": "application/json"},
     },
     {
-        "name": "Twitch",
-        "url": "https://www.twitch.tv/{}",
-        "detect": "not_contains:Sorry. Unless you've got a time machine",
-        "headers": HEADERS_DEFAULT,
-    },
-    {
         "name": "VK",
         "url": "https://vk.com/{}",
         "detect": "not_contains:This page does not exist",
@@ -145,16 +136,12 @@ PLATFORMS = [
         "headers": HEADERS_DEFAULT,
     },
     {
-        "name": "Threads",
-        "url": "https://www.threads.net/@{}",
-        "detect": "not_contains:Page Not Found",
-        "headers": HEADERS_DEFAULT,
-    },
-    {
+        # API pública: 200 con "did" si existe, 400 si no.
         "name": "Bluesky",
-        "url": "https://bsky.app/profile/{}",
-        "detect": "not_contains:Profile not found",
-        "headers": HEADERS_DEFAULT,
+        "url": "https://public.api.bsky.app/xrpc/app.bsky.actor.getProfile?actor={}",
+        "detect": "contains:\"did\"",
+        "headers": {**HEADERS_DEFAULT, "Accept": "application/json"},
+        "display_url": "https://bsky.app/profile/{}",
     },
 
     # ── Desarrollo / Tech ─────────────────────────────────────────────────────
@@ -187,18 +174,15 @@ PLATFORMS = [
         "url": "https://dev.to/api/users/by_username?url={}",
         "detect": "contains:\"username\"",
         "headers": {**HEADERS_DEFAULT, "Accept": "application/json"},
+        "display_url": "https://dev.to/{}",
     },
     {
+        # Perfil inexistente redirige a /login.
         "name": "Replit",
         "url": "https://replit.com/@{}",
         "detect": "not_contains:page doesn't exist",
         "headers": HEADERS_DEFAULT,
-    },
-    {
-        "name": "Kaggle",
-        "url": "https://www.kaggle.com/{}",
-        "detect": "not_contains:No user found",
-        "headers": HEADERS_DEFAULT,
+        "redirect_fail": ["/login", "/signup"],
     },
     {
         "name": "Codepen",
@@ -219,29 +203,27 @@ PLATFORMS = [
         "headers": HEADERS_DEFAULT,
     },
     {
-        "name": "PyPI",
-        "url": "https://pypi.org/user/{}/",
-        "detect": "not_contains:404",
-        "headers": HEADERS_DEFAULT,
-    },
-    {
         "name": "Dockerhub",
         "url": "https://hub.docker.com/v2/users/{}",
         "detect": "contains:\"username\"",
         "headers": {**HEADERS_DEFAULT, "Accept": "application/json"},
     },
     {
+        # La API siempre trae la clave "items"; solo cuenta si NO está vacía.
         "name": "StackOverflow",
         "url": "https://api.stackexchange.com/2.3/users?inname={}&site=stackoverflow",
-        "detect": "contains:\"items\"",
+        "detect": "not_contains:\"items\":[]",
         "headers": HEADERS_DEFAULT,
+        "display_url": "https://stackoverflow.com/users?tab=Reputation&filter=all&search={}",
     },
 
     # ── Gaming ────────────────────────────────────────────────────────────────
     {
+        # El perfil real contiene el contenedor "profile_page"; la página de
+        # error trae "error_ctn". Usamos el marcador positivo.
         "name": "Steam",
         "url": "https://steamcommunity.com/id/{}",
-        "detect": "not_contains:The specified profile could not be found",
+        "detect": "contains:profile_page",
         "headers": HEADERS_DEFAULT,
     },
     {
@@ -289,10 +271,12 @@ PLATFORMS = [
         "headers": HEADERS_DEFAULT,
     },
     {
+        # Subdominio inexistente redirige a bandcamp.com/signup.
         "name": "Bandcamp",
         "url": "https://{}.bandcamp.com",
-        "detect": "not_contains:Sorry, that something",
+        "detect": "status_200",
         "headers": HEADERS_DEFAULT,
+        "redirect_fail": ["/signup", "bandcamp.com/?"],
     },
     {
         "name": "Last.fm",
@@ -304,12 +288,6 @@ PLATFORMS = [
         "name": "Mixcloud",
         "url": "https://api.mixcloud.com/{}/",
         "detect": "contains:\"username\"",
-        "headers": HEADERS_DEFAULT,
-    },
-    {
-        "name": "Spotify",
-        "url": "https://open.spotify.com/user/{}",
-        "detect": "not_contains:Page not found",
         "headers": HEADERS_DEFAULT,
     },
 
@@ -359,16 +337,21 @@ PLATFORMS = [
         "headers": HEADERS_DEFAULT,
     },
     {
+        # Handle inexistente redirige a /search.
         "name": "Substack",
         "url": "https://substack.com/@{}",
-        "detect": "not_contains:not found",
+        "detect": "status_200",
         "headers": HEADERS_DEFAULT,
+        "redirect_fail": ["/search"],
+        "verify_username_in_final": True,
     },
     {
+        # Subdominio inexistente redirige a wordpress.com/typo.
         "name": "Wordpress",
         "url": "https://{}.wordpress.com",
-        "detect": "not_contains:doesn't exist",
+        "detect": "status_200",
         "headers": HEADERS_DEFAULT,
+        "redirect_fail": ["/typo", "wordpress.com/?"],
     },
     {
         "name": "Goodreads",
@@ -416,12 +399,6 @@ PLATFORMS = [
         "detect": "contains:\"them\"",
         "headers": HEADERS_DEFAULT,
     },
-    {
-        "name": "CoinMarketCap",
-        "url": "https://coinmarketcap.com/community/profile/{}/",
-        "detect": "not_contains:Page not found",
-        "headers": HEADERS_DEFAULT,
-    },
 
     # ── Trabajo / Profesional ─────────────────────────────────────────────────
     {
@@ -459,9 +436,10 @@ PLATFORMS = [
 
     # ── Otros ─────────────────────────────────────────────────────────────────
     {
+        # El perfil/canal real trae "tgme_page_title"; la página vacía no.
         "name": "Telegram",
         "url": "https://t.me/{}",
-        "detect": "not_contains:If you have Telegram",
+        "detect": "contains:tgme_page_title",
         "headers": HEADERS_DEFAULT,
     },
     {
@@ -489,10 +467,12 @@ PLATFORMS = [
         "headers": HEADERS_DEFAULT,
     },
     {
+        # Usuario inexistente redirige a la homepage (sin el username en el path).
         "name": "Ko-fi",
         "url": "https://ko-fi.com/{}",
-        "detect": "not_contains:Page Not Found",
+        "detect": "status_200",
         "headers": HEADERS_DEFAULT,
+        "verify_username_in_final": True,
     },
     {
         "name": "Strava",
@@ -567,6 +547,38 @@ def separador(titulo=""):
     else:
         print(f"{D}{'─' * 60}{RS}")
 
+REPORTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "reports")
+
+def guardar_reporte(username, found, elapsed):
+    """Guarda las cuentas encontradas en reports/{username}.txt"""
+    os.makedirs(REPORTS_DIR, exist_ok=True)
+    path = os.path.join(REPORTS_DIR, f"{username}.txt")
+
+    lines = [
+        "=" * 60,
+        "CB-UserHunter — Ciberbrigada OSINT Suite",
+        f"Username: {username}",
+        f"Fecha:    {time.strftime('%Y-%m-%d %H:%M:%S')}",
+        f"Plataformas analizadas: {len(PLATFORMS)}",
+        f"Perfiles encontrados:   {len(found)}",
+        f"Tiempo:   {elapsed:.1f}s",
+        "=" * 60,
+        "",
+    ]
+
+    if found:
+        for f in found:
+            lines.append(f"[{f['name']}] {f['url']}")
+    else:
+        lines.append("Username no encontrado en ninguna plataforma.")
+
+    lines.append("")
+
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write("\n".join(lines))
+
+    return path
+
 def ok(msg):   print(f"  {G}{B}[✓]{RS} {W}{msg}{RS}")
 def warn(msg): print(f"  {Y}[!]{RS} {Y}{msg}{RS}")
 def fail(msg): print(f"  {R}[✗]{RS} {D}{msg}{RS}")
@@ -583,6 +595,21 @@ def check_platform(platform, username):
     try:
         r = requests.get(url, headers=headers, timeout=10,
                          allow_redirects=True)
+
+        # Detección por redirección: muchos sitios redirigen a signup/login/
+        # search/typo/homepage cuando el perfil NO existe. Si la URL final
+        # contiene alguna de esas marcas, el perfil no existe.
+        final_url = (r.url or "").lower()
+        for sub in platform.get("redirect_fail", []):
+            if sub in final_url:
+                return None
+
+        # Algunos sitios redirigen a la homepage (sin el username en el path)
+        # cuando el perfil no existe. Exigir el username en el path final.
+        if platform.get("verify_username_in_final"):
+            path = urllib.parse.urlparse(r.url).path.lower()
+            if username.lower() not in path:
+                return None
 
         body = r.text.lower() if r.text else ""
 
@@ -782,6 +809,9 @@ def main():
         show_results(username, found)
         google_dorks(username)
         resumen_final(username, found, elapsed)
+
+        report_path = guardar_reporte(username, found, elapsed)
+        info(f"Reporte guardado en: {report_path}")
 
         separador()
         print(f"\n  {D}¿Buscar otro username? (Enter para continuar / 'salir' para terminar){RS}")
