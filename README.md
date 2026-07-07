@@ -1,127 +1,182 @@
-# 👤 CB-UserHunter
+# 👤 Mynds-OSINT
 
 <p align="center">
   <img src="https://img.shields.io/badge/version-1.0-cyan?style=for-the-badge&logo=python&logoColor=white"/>
   <img src="https://img.shields.io/badge/python-3.8+-blue?style=for-the-badge&logo=python&logoColor=white"/>
   <img src="https://img.shields.io/badge/OSINT-Username-orange?style=for-the-badge"/>
   <img src="https://img.shields.io/badge/license-MIT-green?style=for-the-badge"/>
-  <img src="https://img.shields.io/badge/plataformas-80+-brightgreen?style=for-the-badge"/>
+  <img src="https://img.shields.io/badge/platforms-60+-brightgreen?style=for-the-badge"/>
 </p>
 
 <p align="center">
-  <b>Búsqueda de usernames en 80+ plataformas simultáneamente</b><br/>
-  Parte de la <a href="https://ciberbrigada.com">Ciberbrigada OSINT Suite</a>
+  <b>Hunt a username across 60+ platforms at once — fast, keyless, false-positive-aware.</b>
 </p>
 
 ---
 
-## ¿Qué hace?
+## What it does
 
-CB-UserHunter busca un username en más de 80 plataformas en paralelo y muestra solo los perfiles encontrados, organizados por categoría.
+Mynds-OSINT takes a single username and checks **60+ platforms in parallel**, then
+shows only the profiles that actually exist, grouped by category. Every run is
+saved to a per-username report under `reports/`.
 
-- ✅ Redes sociales (Instagram, TikTok, Twitter/X, Facebook, LinkedIn...)
-- ✅ Desarrollo (GitHub, GitLab, StackOverflow, HackerNews...)
-- ✅ Gaming (Steam, PSN, Xbox, Roblox, Chess.com...)
-- ✅ Música y creadores (Spotify, SoundCloud, Twitch, YouTube...)
-- ✅ Ciberseguridad (HackTheBox, TryHackMe, BugCrowd, HackerOne...)
-- ✅ Crypto (Keybase, CoinMarketCap, BitcoinTalk...)
-- ✅ Google Dorks automáticos
-- ✅ Búsqueda en paralelo — resultados en 15-30 segundos
+- ✅ **Social** — Instagram, Twitter/X, Facebook, LinkedIn, Pinterest, Reddit, Bluesky, Mastodon…
+- ✅ **Development** — GitHub, GitLab, StackOverflow, Dev.to, HackerNews, Replit, NPM, Docker Hub…
+- ✅ **Gaming** — Steam, PSN, Roblox, Chess.com, Minecraft, Speedrun…
+- ✅ **Music & creators** — SoundCloud, Bandcamp, Last.fm, YouTube, Kick, Patreon, Ko-fi…
+- ✅ **Cybersecurity** — HackTheBox, TryHackMe, BugCrowd, HackerOne…
+- ✅ **Automatic Google Dorks** for deeper manual pivoting
+- ✅ **Reliable detection** — API endpoints, positive content markers and
+  redirect analysis instead of naive text matching, so far fewer false positives
 
-**100% gratuito · Sin API keys · Sin registro · Sin login**
+**100% free · no API keys · no signup · no login**
 
 ---
 
-## Instalación
+## Why the detection is reliable
+
+Naive username checkers flag a profile as "found" whenever a page returns
+HTTP `200`. Modern sites serve a generic `200` JavaScript shell even for
+non-existent users, which produces a flood of false positives.
+
+Mynds-OSINT uses per-platform strategies:
+
+| Strategy | Example platforms | How it works |
+|----------|-------------------|--------------|
+| **Public API** | Bluesky, GitHub, Reddit, Chess.com | Query a JSON endpoint and check a data key (`did`, `login`, …) |
+| **Positive marker** | Steam, Telegram, Pinterest | Require a string that only a real profile renders (`profile_page`, `tgme_page_title`, `og:title`) |
+| **Redirect analysis** | Bandcamp, Replit, Substack, Wordpress, Ko-fi | A missing profile redirects to `/signup`, `/login`, `/search` or the homepage — detected via the final URL |
+| **Non-empty response** | StackOverflow | The API always returns an `items` key; only a non-empty list counts |
+
+Platforms that serve identical bot-blocked shells for real and fake users
+(no reliable signal from a simple request) are intentionally **excluded**
+rather than reported as false positives.
+
+---
+
+## Installation
 
 ```bash
-# 1. Clonar el repositorio
-git clone https://github.com/ciberbrigada/cb-userhunter
-cd cb-userhunter
+# 1. Clone the repository
+git clone https://github.com/joaoguiIherme/Mynds-OSINT
+cd Mynds-OSINT
 
-# 2. Instalar dependencias
+# 2. Install dependencies
 pip install -r requirements.txt
 
-# 3. Ejecutar
-python3 cb_user_hunter.py
+# 3. Run
+python3 mynds_osint.py
 ```
+
+Requires Python 3.8+. Dependencies: `requests`, `colorama`.
 
 ---
 
-## 🔄 Mantener actualizado
+## Usage
 
 ```bash
-cd cb-userhunter
-git pull
-```
-
----
-
-## Uso
-
-```bash
-python3 cb_user_hunter.py
+python3 mynds_osint.py
 ```
 
 ```
 ▸ Username: johndoe
 
-Analizando 80+ plataformas en paralelo...
-[████████████████████░░░░░░░░░░░░░░░░░░░░] 65/80
+Scanning 60+ platforms in parallel...
+[████████████████████░░░░░░░░░░░░░░░░░░░░] 65/63
 
-── RESULTADOS — @johndoe ──
+── RESULTS — @johndoe ──
 
-▸ Redes Sociales
+▸ Social Networks
   ✓ Instagram    https://www.instagram.com/johndoe/
-  ✓ Twitter/X    https://x.com/johndoe
   ✓ Reddit       https://www.reddit.com/user/johndoe
 
-▸ Desarrollo / Tech
+▸ Development / Tech
   ✓ GitHub       https://github.com/johndoe
 
 ▸ Gaming
   ✓ Steam        https://steamcommunity.com/id/johndoe
 ```
 
----
-
-## Plataformas incluidas (80+)
-
-| Categoría | Plataformas |
-|-----------|-------------|
-| Redes Sociales | Instagram, Twitter/X, TikTok, Facebook, LinkedIn, Pinterest, Snapchat, Tumblr, Reddit, Threads, Bluesky, VK, Mastodon |
-| Desarrollo | GitHub, GitLab, Bitbucket, HackerNews, StackOverflow, Dev.to, Replit, Kaggle, Codepen, Pastebin, NPM, PyPI, Dockerhub |
-| Gaming | Steam, Xbox, PSN, Roblox, Chess.com, Minecraft, Fortnite, Speedrun |
-| Música | Spotify, SoundCloud, Bandcamp, Last.fm, Mixcloud, YouTube, Twitch, Kick |
-| Fotos/Diseño | Flickr, 500px, Behance, Dribbble, DeviantArt, ArtStation |
-| Ciberseguridad | HackTheBox, TryHackMe, BugCrowd, HackerOne, Shodan |
-| Crypto | Keybase, Etherscan, CoinMarketCap, BitcoinTalk, Cashapp |
-| Comunidades | Quora, Medium, Substack, Wordpress, Goodreads, Letterboxd |
-| Otros | Telegram, Gravatar, Linktree, About.me, Patreon, Ko-fi |
+Type another username to keep searching, or `exit` to quit.
 
 ---
 
-## ⚠️ Aviso Legal
+## Reports
 
-Esta herramienta es para uso **exclusivamente legal, ético y educativo**.
-Ciberbrigada no se hace responsable del mal uso de esta herramienta.
+Every search writes a plain-text report to `reports/{username}.txt`:
+
+```
+============================================================
+Mynds-OSINT — Username OSINT Suite
+Username: johndoe
+Date:     2026-07-07 16:28:33
+Platforms scanned: 63
+Profiles found:    4
+Elapsed:  11.7s
+============================================================
+
+[Instagram] https://www.instagram.com/johndoe/
+[Reddit] https://www.reddit.com/user/johndoe
+[GitHub] https://github.com/johndoe
+[Steam] https://steamcommunity.com/id/johndoe
+```
+
+> Reports are ignored by git (`.gitignore`) so your searched targets never get
+> committed. The `reports/` folder is kept in the repo via `.gitkeep`.
 
 ---
 
-## 🛡️ Ciberbrigada OSINT Suite
+## Covered platforms
 
-- 📧 **CB-EmailHunter** — Email OSINT → [ver repo](https://github.com/ciberbrigada/cb-emailhunter)
-- 👤 **CB-UserHunter** — Username OSINT *(este repositorio)*
-- 📱 **CB-PhoneHunter** — OSINT de números telefónicos *(próximamente)*
-- 🌐 **CB-DomainHunter** — OSINT de dominios e IPs *(próximamente)*
-- 📸 **CB-InstaHunter** — Instagram OSINT *(próximamente)*
+| Category | Platforms |
+|----------|-----------|
+| Social | Instagram, Twitter/X, Facebook, LinkedIn, Pinterest, Snapchat, Tumblr, Reddit, Bluesky, VK, Mastodon |
+| Development | GitHub, GitLab, Bitbucket, HackerNews, StackOverflow, Dev.to, Replit, Codepen, Pastebin, NPM, Docker Hub |
+| Gaming | Steam, PSN, Roblox, Chess.com, Minecraft, Speedrun, Fortnite |
+| Music / Creators | SoundCloud, Bandcamp, Last.fm, Mixcloud, YouTube, Kick, Vimeo, Rumble, Patreon, Ko-fi |
+| Photos / Design | Flickr, Behance, Dribbble, DeviantArt, ArtStation |
+| Cybersecurity | HackTheBox, TryHackMe, BugCrowd, HackerOne |
+| Crypto / Finance | Keybase, Cashapp |
+| Work | ProductHunt, Fiverr |
+| Communities | Quora, Medium, Substack, Wordpress, Goodreads, Letterboxd, Strava |
+| Others | Telegram, Gravatar, About.me, Linktree |
+
+> Some platforms (e.g. Instagram) enforce aggressive anti-bot protection and may
+> return no result from certain networks. Mynds-OSINT favors a **miss over a
+> false positive** in those cases.
 
 ---
 
-<p align="center">
-  <a href="https://ciberbrigada.com">ciberbrigada.com</a> ·
-  <a href="https://github.com/ciberbrigada">GitHub</a> ·
-  <a href="https://www.linkedin.com/company/ciberbrigada/">LinkedIn</a>
-  <br/><br/>
-  <sub>by: Fgunther</sub>
-</p>
+## Adding a platform
+
+Each platform is a dict in the `PLATFORMS` list in `mynds_osint.py`:
+
+```python
+{
+    "name": "Example",
+    "url": "https://example.com/{}",
+    "detect": "not_contains:Page not found",   # or contains:TEXT / status_200
+    "headers": HEADERS_DEFAULT,
+    # optional:
+    # "display_url": "https://example.com/user/{}",
+    # "redirect_fail": ["/login", "/signup"],
+    # "verify_username_in_final": True,
+}
+```
+
+Always test a **known real** account and a **guaranteed fake** one — the fake
+must return no match, otherwise the detection is a false positive.
+
+---
+
+## ⚠️ Legal notice
+
+This tool is intended for **legal, ethical and educational use only**, such as
+authorized OSINT investigations and security research. The authors are not
+responsible for any misuse.
+
+---
+
+## License
+
+Released under the [MIT License](LICENSE).

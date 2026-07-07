@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # ═══════════════════════════════════════════════════════════════════════════════
-#   CB-USERHUNTER v1.0 — Ciberbrigada OSINT Suite
-#   Búsqueda de usernames en 80+ plataformas simultáneamente
-#   Uso exclusivo para fines legales y educativos
+#   MYNDS-OSINT v1.0 — Username OSINT Suite
+#   Search a username across 60+ platforms simultaneously
+#   For legal, ethical and educational use only
 # ═══════════════════════════════════════════════════════════════════════════════
 
 import sys
@@ -22,7 +22,7 @@ except ImportError:
     from colorama import init, Fore, Style
     init(autoreset=True)
 
-# ── Colores ───────────────────────────────────────────────────────────────────
+# ── Colors ──────────────────────────────────────────────────────────────────────
 C  = Fore.CYAN
 Y  = Fore.YELLOW
 G  = Fore.GREEN
@@ -37,7 +37,7 @@ HEADERS_DEFAULT = {
     "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
                   "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-    "Accept-Language": "es-AR,es;q=0.9,en;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9",
     "Accept-Encoding": "gzip, deflate, br",
     "Connection": "keep-alive",
 }
@@ -46,27 +46,34 @@ HEADERS_API = {
     "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) "
                   "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
     "Accept": "application/json, text/plain, */*",
-    "Accept-Language": "es-AR,es;q=0.9,en;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9",
     "Accept-Encoding": "gzip, deflate, br",
     "Connection": "keep-alive",
     "X-Requested-With": "XMLHttpRequest",
 }
 
 # ══════════════════════════════════════════════════════════════════════════════
-# BASE DE PLATAFORMAS — 80+ sitios con detección avanzada
+# PLATFORM DATABASE — 60+ sites with advanced detection
 # detect modes:
-#   status_200         — solo verifica HTTP 200
-#   not_contains:TEXT  — 200 y NO contiene ese texto (perfil existe)
-#   contains:TEXT      — 200 y SÍ contiene ese texto (perfil existe)
-#   api_json:KEY       — llama API JSON y verifica que KEY exista
-#   status_200_strict  — 200 sin redirección a login
+#   status_200         — only checks for HTTP 200
+#   not_contains:TEXT  — 200 and does NOT contain that text (profile exists)
+#   contains:TEXT      — 200 and DOES contain that text (profile exists)
+#
+# optional keys:
+#   display_url                — pretty URL shown to the user (when the probe
+#                                URL is an API endpoint)
+#   redirect_fail: [substr]    — if the final URL contains any of these, the
+#                                profile does NOT exist (site redirected to
+#                                signup/login/search/etc.)
+#   verify_username_in_final   — the username must remain in the final URL path,
+#                                otherwise the site redirected to its homepage
 # ══════════════════════════════════════════════════════════════════════════════
 PLATFORMS = [
-    # ── Redes Sociales ────────────────────────────────────────────────────────
+    # ── Social Networks ───────────────────────────────────────────────────────
     {
-        # API JSON estricta: solo cuenta como encontrado si el JSON trae el
-        # campo "username". El shell HTML de IG devolvía 200 genérico y daba
-        # falsos positivos, por eso se eliminó el fallback.
+        # Strict JSON API: only counts as found when the JSON carries the
+        # "username" field. IG's HTML shell returned a generic 200 and produced
+        # false positives, which is why the fallback was removed.
         "name": "Instagram",
         "url": "https://i.instagram.com/api/v1/users/web_profile_info/?username={}",
         "detect": "contains:\"username\"",
@@ -99,7 +106,8 @@ PLATFORMS = [
         "headers": HEADERS_DEFAULT,
     },
     {
-        # El perfil real trae meta og:title; la página de "no encontrado" no.
+        # The real profile carries an og:title meta tag; the "not found" page
+        # does not.
         "name": "Pinterest",
         "url": "https://www.pinterest.com/{}/",
         "detect": "contains:og:title",
@@ -136,7 +144,7 @@ PLATFORMS = [
         "headers": HEADERS_DEFAULT,
     },
     {
-        # API pública: 200 con "did" si existe, 400 si no.
+        # Public API: 200 with "did" if the account exists, 400 otherwise.
         "name": "Bluesky",
         "url": "https://public.api.bsky.app/xrpc/app.bsky.actor.getProfile?actor={}",
         "detect": "contains:\"did\"",
@@ -144,7 +152,7 @@ PLATFORMS = [
         "display_url": "https://bsky.app/profile/{}",
     },
 
-    # ── Desarrollo / Tech ─────────────────────────────────────────────────────
+    # ── Development / Tech ─────────────────────────────────────────────────────
     {
         "name": "GitHub",
         "url": "https://api.github.com/users/{}",
@@ -177,7 +185,7 @@ PLATFORMS = [
         "display_url": "https://dev.to/{}",
     },
     {
-        # Perfil inexistente redirige a /login.
+        # A non-existent profile redirects to /login.
         "name": "Replit",
         "url": "https://replit.com/@{}",
         "detect": "not_contains:page doesn't exist",
@@ -209,7 +217,7 @@ PLATFORMS = [
         "headers": {**HEADERS_DEFAULT, "Accept": "application/json"},
     },
     {
-        # La API siempre trae la clave "items"; solo cuenta si NO está vacía.
+        # The API always returns the "items" key; only counts if it is NOT empty.
         "name": "StackOverflow",
         "url": "https://api.stackexchange.com/2.3/users?inname={}&site=stackoverflow",
         "detect": "not_contains:\"items\":[]",
@@ -219,8 +227,8 @@ PLATFORMS = [
 
     # ── Gaming ────────────────────────────────────────────────────────────────
     {
-        # El perfil real contiene el contenedor "profile_page"; la página de
-        # error trae "error_ctn". Usamos el marcador positivo.
+        # The real profile contains the "profile_page" container; the error page
+        # carries "error_ctn". We use the positive marker.
         "name": "Steam",
         "url": "https://steamcommunity.com/id/{}",
         "detect": "contains:profile_page",
@@ -263,7 +271,7 @@ PLATFORMS = [
         "headers": HEADERS_DEFAULT,
     },
 
-    # ── Música / Creadores ────────────────────────────────────────────────────
+    # ── Music / Creators ──────────────────────────────────────────────────────
     {
         "name": "SoundCloud",
         "url": "https://soundcloud.com/{}",
@@ -271,7 +279,7 @@ PLATFORMS = [
         "headers": HEADERS_DEFAULT,
     },
     {
-        # Subdominio inexistente redirige a bandcamp.com/signup.
+        # A non-existent subdomain redirects to bandcamp.com/signup.
         "name": "Bandcamp",
         "url": "https://{}.bandcamp.com",
         "detect": "status_200",
@@ -291,7 +299,7 @@ PLATFORMS = [
         "headers": HEADERS_DEFAULT,
     },
 
-    # ── Fotos / Diseño ────────────────────────────────────────────────────────
+    # ── Photos / Design ───────────────────────────────────────────────────────
     {
         "name": "Flickr",
         "url": "https://www.flickr.com/people/{}",
@@ -323,7 +331,7 @@ PLATFORMS = [
         "headers": HEADERS_DEFAULT,
     },
 
-    # ── Foros / Comunidades ───────────────────────────────────────────────────
+    # ── Forums / Communities ──────────────────────────────────────────────────
     {
         "name": "Quora",
         "url": "https://www.quora.com/profile/{}",
@@ -337,7 +345,7 @@ PLATFORMS = [
         "headers": HEADERS_DEFAULT,
     },
     {
-        # Handle inexistente redirige a /search.
+        # A non-existent handle redirects to /search.
         "name": "Substack",
         "url": "https://substack.com/@{}",
         "detect": "status_200",
@@ -346,7 +354,7 @@ PLATFORMS = [
         "verify_username_in_final": True,
     },
     {
-        # Subdominio inexistente redirige a wordpress.com/typo.
+        # A non-existent subdomain redirects to wordpress.com/typo.
         "name": "Wordpress",
         "url": "https://{}.wordpress.com",
         "detect": "status_200",
@@ -366,7 +374,7 @@ PLATFORMS = [
         "headers": HEADERS_DEFAULT,
     },
 
-    # ── Ciberseguridad ────────────────────────────────────────────────────────
+    # ── Cybersecurity ─────────────────────────────────────────────────────────
     {
         "name": "HackTheBox",
         "url": "https://www.hackthebox.com/api/v4/user/profile/basic/{}",
@@ -392,7 +400,7 @@ PLATFORMS = [
         "headers": HEADERS_DEFAULT,
     },
 
-    # ── Crypto / Finanzas ─────────────────────────────────────────────────────
+    # ── Crypto / Finance ──────────────────────────────────────────────────────
     {
         "name": "Keybase",
         "url": "https://keybase.io/_/api/1.0/user/lookup.json?username={}",
@@ -400,7 +408,7 @@ PLATFORMS = [
         "headers": HEADERS_DEFAULT,
     },
 
-    # ── Trabajo / Profesional ─────────────────────────────────────────────────
+    # ── Work / Professional ───────────────────────────────────────────────────
     {
         "name": "ProductHunt",
         "url": "https://www.producthunt.com/@{}",
@@ -434,9 +442,9 @@ PLATFORMS = [
         "headers": HEADERS_DEFAULT,
     },
 
-    # ── Otros ─────────────────────────────────────────────────────────────────
+    # ── Others ────────────────────────────────────────────────────────────────
     {
-        # El perfil/canal real trae "tgme_page_title"; la página vacía no.
+        # A real profile/channel carries "tgme_page_title"; the empty page does not.
         "name": "Telegram",
         "url": "https://t.me/{}",
         "detect": "contains:tgme_page_title",
@@ -467,7 +475,7 @@ PLATFORMS = [
         "headers": HEADERS_DEFAULT,
     },
     {
-        # Usuario inexistente redirige a la homepage (sin el username en el path).
+        # A non-existent user redirects to the homepage (username drops from the path).
         "name": "Ko-fi",
         "url": "https://ko-fi.com/{}",
         "detect": "status_200",
@@ -526,42 +534,41 @@ def banner():
         mid = len(line) // 2
         print(f"       {CYAN}{BOLD}{line[:mid]}{ORAN}{line[mid:]}{RST}")
 
-    print(f"                          {DIM}by: Fgunther{RST}")
     print()
-    print(f"  {CYAN}{BOLD}Ciber{ORAN}brigada{RST} {CYAN}OSINT Suite{RST}  {DIM}─────────────────────{RST}")
+    print(f"  {CYAN}{BOLD}Mynds{ORAN}-OSINT{RST} {CYAN}Suite{RST}  {DIM}───────────────────────────{RST}")
     print(f"  {BOLD}╔══════════════════════════════════════════╗{RST}")
-    print(f"  {BOLD}║  👤  CB-USERHUNTER  v1.0                ║{RST}")
-    print(f"  {BOLD}║  Username OSINT — 80+ plataformas       ║{RST}")
+    print(f"  {BOLD}║  👤  MYNDS-OSINT  v1.0                   ║{RST}")
+    print(f"  {BOLD}║  Username OSINT — 60+ platforms          ║{RST}")
     print(f"  {BOLD}╚══════════════════════════════════════════╝{RST}")
-    print(f"  {DIM}[ ciberbrigada.com ]  [ OSINT Suite ]{RST}")
-    print(f"  {YEL}⚠  Solo para uso legal, ético y educativo  ⚠{RST}")
+    print(f"  {DIM}[ github.com/joaoguiIherme/Mynds-OSINT ]{RST}")
+    print(f"  {YEL}⚠  For legal, ethical and educational use only  ⚠{RST}")
     print()
 
 # ══════════════════════════════════════════════════════════════════════════════
 # HELPERS
 # ══════════════════════════════════════════════════════════════════════════════
-def separador(titulo=""):
-    if titulo:
-        pad = (58 - len(titulo)) // 2
-        print(f"\n{C}{'─' * pad} {B}{titulo}{RS}{C} {'─' * pad}{RS}")
+def separator(title=""):
+    if title:
+        pad = (58 - len(title)) // 2
+        print(f"\n{C}{'─' * pad} {B}{title}{RS}{C} {'─' * pad}{RS}")
     else:
         print(f"{D}{'─' * 60}{RS}")
 
 REPORTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "reports")
 
-def guardar_reporte(username, found, elapsed):
-    """Guarda las cuentas encontradas en reports/{username}.txt"""
+def save_report(username, found, elapsed):
+    """Save the found accounts to reports/{username}.txt"""
     os.makedirs(REPORTS_DIR, exist_ok=True)
     path = os.path.join(REPORTS_DIR, f"{username}.txt")
 
     lines = [
         "=" * 60,
-        "CB-UserHunter — Ciberbrigada OSINT Suite",
+        "Mynds-OSINT — Username OSINT Suite",
         f"Username: {username}",
-        f"Fecha:    {time.strftime('%Y-%m-%d %H:%M:%S')}",
-        f"Plataformas analizadas: {len(PLATFORMS)}",
-        f"Perfiles encontrados:   {len(found)}",
-        f"Tiempo:   {elapsed:.1f}s",
+        f"Date:     {time.strftime('%Y-%m-%d %H:%M:%S')}",
+        f"Platforms scanned: {len(PLATFORMS)}",
+        f"Profiles found:    {len(found)}",
+        f"Elapsed:  {elapsed:.1f}s",
         "=" * 60,
         "",
     ]
@@ -570,7 +577,7 @@ def guardar_reporte(username, found, elapsed):
         for f in found:
             lines.append(f"[{f['name']}] {f['url']}")
     else:
-        lines.append("Username no encontrado en ninguna plataforma.")
+        lines.append("Username not found on any platform.")
 
     lines.append("")
 
@@ -585,7 +592,7 @@ def fail(msg): print(f"  {R}[✗]{RS} {D}{msg}{RS}")
 def info(msg): print(f"  {C}[i]{RS} {W}{msg}{RS}")
 
 # ══════════════════════════════════════════════════════════════════════════════
-# CHECKER — verifica una plataforma con detección avanzada
+# CHECKER — verifies a single platform with advanced detection
 # ══════════════════════════════════════════════════════════════════════════════
 def check_platform(platform, username):
     url     = platform["url"].format(username)
@@ -596,16 +603,17 @@ def check_platform(platform, username):
         r = requests.get(url, headers=headers, timeout=10,
                          allow_redirects=True)
 
-        # Detección por redirección: muchos sitios redirigen a signup/login/
-        # search/typo/homepage cuando el perfil NO existe. Si la URL final
-        # contiene alguna de esas marcas, el perfil no existe.
+        # Redirect-based detection: many sites redirect to signup/login/search/
+        # typo/homepage when the profile does NOT exist. If the final URL
+        # contains any of those markers, the profile does not exist.
         final_url = (r.url or "").lower()
         for sub in platform.get("redirect_fail", []):
             if sub in final_url:
                 return None
 
-        # Algunos sitios redirigen a la homepage (sin el username en el path)
-        # cuando el perfil no existe. Exigir el username en el path final.
+        # Some sites redirect to the homepage (dropping the username from the
+        # path) when the profile does not exist. Require the username in the
+        # final path.
         if platform.get("verify_username_in_final"):
             path = urllib.parse.urlparse(r.url).path.lower()
             if username.lower() not in path:
@@ -613,27 +621,27 @@ def check_platform(platform, username):
 
         body = r.text.lower() if r.text else ""
 
-        # status_200 simple
+        # status_200 — simple
         if detect == "status_200":
             if r.status_code == 200:
                 return {"name": platform["name"], "url": platform.get("display_url", url).format(username), "status": r.status_code}
             return None
 
-        # contains:TEXT — el perfil existe si el texto está presente
+        # contains:TEXT — the profile exists if the text is present
         if detect.startswith("contains:"):
             needle = detect.split("contains:")[1].lower()
             if r.status_code == 200 and needle in body:
                 return {"name": platform["name"], "url": platform.get("display_url", url).format(username), "status": r.status_code}
             return None
 
-        # not_contains:TEXT — el perfil existe si el texto NO está presente
+        # not_contains:TEXT — the profile exists if the text is NOT present
         if detect.startswith("not_contains:"):
             needle = detect.split("not_contains:")[1].lower()
             if r.status_code == 200 and needle not in body:
-                # Verificar que no sea una página genérica vacía
+                # Make sure it is not a generic empty page
                 if len(r.text) > 200:
                     return {"name": platform["name"], "url": platform.get("display_url", url).format(username), "status": r.status_code}
-            # Intentar fallback si existe
+            # Try the fallback if one exists
             if "fallback_url" in platform:
                 fb_url    = platform["fallback_url"].format(username)
                 fb_detect = platform.get("fallback_detect", "status_200")
@@ -658,18 +666,18 @@ def check_platform(platform, username):
         return None
 
 # ══════════════════════════════════════════════════════════════════════════════
-# BÚSQUEDA PRINCIPAL — multihilo
+# MAIN SEARCH — multi-threaded
 # ══════════════════════════════════════════════════════════════════════════════
 def search_username(username):
-    separador(f"BUSCANDO: {username}")
-    print(f"\n  {C}Analizando {len(PLATFORMS)} plataformas en paralelo...{RS}")
-    print(f"  {D}Esto puede tardar 15-30 segundos{RS}\n")
+    separator(f"SEARCHING: {username}")
+    print(f"\n  {C}Scanning {len(PLATFORMS)} platforms in parallel...{RS}")
+    print(f"  {D}This may take 15-30 seconds{RS}\n")
 
     found     = []
     total     = len(PLATFORMS)
     completed = 0
 
-    # Barra de progreso simple
+    # Simple progress bar
     def progress(n, total):
         pct  = int(n / total * 40)
         bar  = "█" * pct + "░" * (40 - pct)
@@ -688,36 +696,36 @@ def search_username(username):
     return found
 
 # ══════════════════════════════════════════════════════════════════════════════
-# MOSTRAR RESULTADOS
+# SHOW RESULTS
 # ══════════════════════════════════════════════════════════════════════════════
 def show_results(username, found):
-    separador(f"RESULTADOS — @{username}")
+    separator(f"RESULTS — @{username}")
 
     if not found:
-        warn(f"Username '{username}' no encontrado en ninguna plataforma")
+        warn(f"Username '{username}' not found on any platform")
         return
 
-    ok(f"Encontrado en {G}{B}{len(found)}{RS} {W}plataformas:")
+    ok(f"Found on {G}{B}{len(found)}{RS} {W}platforms:")
     print()
 
-    # Agrupar por categoría
-    categorias = {
-        "Redes Sociales":    ["Instagram","Twitter/X","TikTok","Facebook","LinkedIn","Pinterest","Snapchat","Tumblr","Reddit","Threads","Bluesky","VK","Mastodon","Clubhouse"],
-        "Desarrollo / Tech": ["GitHub","GitLab","Bitbucket","HackerNews","StackOverflow","Dev.to","Replit","Kaggle","Codepen","Pastebin","NPM","PyPI","Dockerhub"],
-        "Gaming":            ["Steam","Xbox","PSN","Roblox","Chess.com","Minecraft","Fortnite","Speedrun"],
-        "Música / Creadores":["Spotify","SoundCloud","Bandcamp","Last.fm","Mixcloud","YouTube","Twitch","Kick","Vimeo","Dailymotion","Rumble","Patreon","Ko-fi"],
-        "Fotos / Diseño":    ["Flickr","500px","Behance","Dribbble","DeviantArt","ArtStation"],
-        "Ciberseguridad":    ["HackTheBox","TryHackMe","BugCrowd","HackerOne","Shodan"],
-        "Crypto / Finanzas": ["Keybase","Etherscan","CoinMarketCap","BitcoinTalk","Cashapp"],
-        "Trabajo":           ["AngelList","ProductHunt","Fiverr","Upwork"],
-        "Comunidades":       ["Quora","Medium","Substack","Wordpress","Blogspot","WikiPedia","Goodreads","Letterboxd","Strava"],
-        "Otros":             ["Telegram","Signal","Gravatar","About.me","Linktree","Carrd","OnlyFans"],
+    # Group by category
+    categories = {
+        "Social Networks":     ["Instagram","Twitter/X","Facebook","LinkedIn","Pinterest","Snapchat","Tumblr","Reddit","Bluesky","VK","Mastodon"],
+        "Development / Tech":   ["GitHub","GitLab","Bitbucket","HackerNews","StackOverflow","Dev.to","Replit","Codepen","Pastebin","NPM","Dockerhub"],
+        "Gaming":              ["Steam","PSN","Roblox","Chess.com","Minecraft","Fortnite","Speedrun"],
+        "Music / Creators":    ["SoundCloud","Bandcamp","Last.fm","Mixcloud","YouTube","Kick","Vimeo","Rumble","Patreon","Ko-fi"],
+        "Photos / Design":     ["Flickr","Behance","Dribbble","DeviantArt","ArtStation"],
+        "Cybersecurity":       ["HackTheBox","TryHackMe","BugCrowd","HackerOne"],
+        "Crypto / Finance":    ["Keybase","Cashapp"],
+        "Work":                ["ProductHunt","Fiverr"],
+        "Communities":         ["Quora","Medium","Substack","Wordpress","Goodreads","Letterboxd","Strava"],
+        "Others":              ["Telegram","Gravatar","About.me","Linktree"],
     }
 
     found_names = {f["name"]: f for f in found}
     printed = set()
 
-    for cat, plats in categorias.items():
+    for cat, plats in categories.items():
         cat_found = [found_names[p] for p in plats if p in found_names]
         if cat_found:
             print(f"  {C}{B}▸ {cat}{RS}")
@@ -726,10 +734,10 @@ def show_results(username, found):
                 printed.add(f["name"])
             print()
 
-    # Cualquier resultado que no cayó en categoría
+    # Any result that did not fall into a category
     extras = [f for f in found if f["name"] not in printed]
     if extras:
-        print(f"  {C}{B}▸ Otros{RS}")
+        print(f"  {C}{B}▸ Others{RS}")
         for f in extras:
             print(f"    {G}[✓]{RS} {W}{B}{f['name']:<18}{RS} {D}{f['url']}{RS}")
         print()
@@ -738,18 +746,18 @@ def show_results(username, found):
 # GOOGLE DORKS
 # ══════════════════════════════════════════════════════════════════════════════
 def google_dorks(username):
-    separador("GOOGLE DORKS")
+    separator("GOOGLE DORKS")
     dorks = [
-        (f'"{username}"',                              "Username exacto"),
-        (f'"@{username}"',                             "Mención con @"),
+        (f'"{username}"',                              "Exact username"),
+        (f'"@{username}"',                             "Mention with @"),
         (f'"{username}" site:linkedin.com',            "LinkedIn"),
         (f'"{username}" site:github.com',              "GitHub"),
-        (f'"{username}" filetype:pdf',                 "En PDFs"),
-        (f'"{username}" email OR mail OR correo',      "Email asociado"),
-        (f'"{username}" password OR contraseña OR leak',"En leaks"),
+        (f'"{username}" filetype:pdf',                 "In PDFs"),
+        (f'"{username}" email OR mail',                "Associated email"),
+        (f'"{username}" password OR leak',             "In leaks"),
         (f'intext:"{username}" site:pastebin.com',     "Pastebin"),
-        (f'"{username}" CV OR curriculum OR resume',   "Curriculums"),
-        (f'"{username}" phone OR celular OR teléfono', "Teléfono asociado"),
+        (f'"{username}" CV OR curriculum OR resume',   "Resumes"),
+        (f'"{username}" phone OR mobile',              "Associated phone"),
     ]
     for dork, desc in dorks:
         encoded = urllib.parse.quote(dork)
@@ -757,20 +765,20 @@ def google_dorks(username):
         print(f"  {C}▸ {W}{desc:<30}{RS} {D}{url[:70]}{RS}")
 
 # ══════════════════════════════════════════════════════════════════════════════
-# RESUMEN FINAL
+# FINAL SUMMARY
 # ══════════════════════════════════════════════════════════════════════════════
-def resumen_final(username, found, elapsed):
-    separador("RESUMEN")
-    print(f"\n  {C}{B}Target:{RS}      {W}{B}@{username}{RS}")
-    print(f"  {C}{B}Plataformas:{RS} {W}{len(PLATFORMS)} analizadas{RS}")
-    print(f"  {C}{B}Encontrado:{RS}  {G}{B}{len(found)}{RS} {W}perfiles{RS}")
-    print(f"  {C}{B}Tiempo:{RS}      {W}{elapsed:.1f}s{RS}")
+def final_summary(username, found, elapsed):
+    separator("SUMMARY")
+    print(f"\n  {C}{B}Target:{RS}     {W}{B}@{username}{RS}")
+    print(f"  {C}{B}Platforms:{RS} {W}{len(PLATFORMS)} scanned{RS}")
+    print(f"  {C}{B}Found:{RS}     {G}{B}{len(found)}{RS} {W}profiles{RS}")
+    print(f"  {C}{B}Elapsed:{RS}   {W}{elapsed:.1f}s{RS}")
     print()
     if found:
-        print(f"  {D}Perfiles encontrados:{RS}")
+        print(f"  {D}Profiles found:{RS}")
         for f in found:
             print(f"  {G}  ✓{RS} {W}{f['name']}{RS}")
-    print(f"\n  {D}Análisis completado — Ciberbrigada OSINT Suite v1.0{RS}\n")
+    print(f"\n  {D}Analysis complete — Mynds-OSINT Suite v1.0{RS}\n")
 
 # ══════════════════════════════════════════════════════════════════════════════
 # MAIN
@@ -778,28 +786,28 @@ def resumen_final(username, found, elapsed):
 def main():
     banner()
 
-    print(f"  {W}Ingresá el username a buscar (sin @) o 'salir' para terminar:{RS}\n")
+    print(f"  {W}Enter the username to search (without @) or 'exit' to quit:{RS}\n")
 
     while True:
         try:
             username = input(f"  {C}▸ Username:{RS} ").strip()
         except (KeyboardInterrupt, EOFError):
-            print(f"\n\n  {Y}Saliendo... Hasta pronto.{RS}\n")
+            print(f"\n\n  {Y}Exiting... See you soon.{RS}\n")
             sys.exit(0)
 
-        if username.lower() in ("salir", "exit", "quit", "q"):
-            print(f"\n  {Y}Saliendo... Hasta pronto.{RS}\n")
+        if username.lower() in ("exit", "quit", "q"):
+            print(f"\n  {Y}Exiting... See you soon.{RS}\n")
             sys.exit(0)
 
-        # Limpiar @ si lo puso
+        # Strip @ if the user typed it
         username = username.lstrip("@").strip()
 
         if not username or len(username) < 2:
-            warn("Ingresá un username válido (mínimo 2 caracteres)")
+            warn("Enter a valid username (minimum 2 characters)")
             continue
 
         if not re.match(r'^[a-zA-Z0-9._\-]+$', username):
-            warn("El username solo puede contener letras, números, puntos, guiones y guiones bajos")
+            warn("The username may only contain letters, numbers, dots, hyphens and underscores")
             continue
 
         start   = time.time()
@@ -808,20 +816,20 @@ def main():
 
         show_results(username, found)
         google_dorks(username)
-        resumen_final(username, found, elapsed)
+        final_summary(username, found, elapsed)
 
-        report_path = guardar_reporte(username, found, elapsed)
-        info(f"Reporte guardado en: {report_path}")
+        report_path = save_report(username, found, elapsed)
+        info(f"Report saved to: {report_path}")
 
-        separador()
-        print(f"\n  {D}¿Buscar otro username? (Enter para continuar / 'salir' para terminar){RS}")
+        separator()
+        print(f"\n  {D}Search another username? (Enter to continue / 'exit' to quit){RS}")
         try:
             again = input(f"  {C}▸{RS} ").strip().lower()
-            if again in ("salir", "exit", "quit", "q"):
-                print(f"\n  {Y}Saliendo... Hasta pronto.{RS}\n")
+            if again in ("exit", "quit", "q"):
+                print(f"\n  {Y}Exiting... See you soon.{RS}\n")
                 sys.exit(0)
         except (KeyboardInterrupt, EOFError):
-            print(f"\n  {Y}Saliendo...{RS}\n")
+            print(f"\n  {Y}Exiting...{RS}\n")
             sys.exit(0)
 
         banner()
